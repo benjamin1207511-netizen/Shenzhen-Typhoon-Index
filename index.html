@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>深圳台风风险指数计算器</title>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async>
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+    body {
+      background: linear-gradient(145deg, #f0f5fe 0%, #e6edf7 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .card {
+      max-width: 820px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-radius: 48px;
+      padding: 30px 28px;
+      box-shadow: 0 20px 40px rgba(0, 20, 50, 0.15), 0 8px 16px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      transition: all 0.2s ease;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #0b2b4a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 0;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    .subhead {
+      color: #2a4b6e;
+      font-size: 15px;
+      font-weight: 400;
+      margin-top: -6px;
+      margin-bottom: 24px;
+      border-left: 4px solid #3d7eb3;
+      padding-left: 16px;
+      background: rgba(61, 126, 179, 0.06);
+      border-radius: 0 12px 12px 0;
+      line-height: 1.5;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 20px;
+    }
+    @media (max-width: 600px) {
+      .card { padding: 24px 16px; }
+      .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+      h1 { font-size: 24px; }
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1f3b57;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field label span {
+      font-weight: 400;
+      color: #4d6f91;
+      font-size: 13px;
+    }
+    .field input {
+      background: white;
+      border: 1px solid #cbdae9;
+      border-radius: 20px;
+      padding: 14px 18px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #0b2b4a;
+      transition: 0.15s;
+      outline: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+      width: 100%;
+    }
+    .field input:focus {
+      border-color: #2a7bbf;
+      box-shadow: 0 0 0 4px rgba(42, 123, 191, 0.15);
+    }
+    .field input:read-only {
+      background: #f2f7fc;
+      border-color: #bccfdf;
+      color: #1d3f5e;
+    }
+    .field .hint {
+      font-size: 12px;
+      color: #5c7b9a;
+      padding-left: 12px;
+      margin-top: 2px;
+    }
+    .row-full {
+      grid-column: 1 / -1;
+    }
+    .params-group {
+      background: #eaf1fb;
+      border-radius: 28px;
+      padding: 16px 20px;
+      margin: 18px 0 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 24px;
+      border: 1px solid #d3e2f2;
+    }
+    .param-item {
+      display: flex;
+      align-items: center;
+      gap: 6px 12px;
+      flex-wrap: wrap;
+    }
+    .param-item label {
+      font-weight: 500;
+      color: #1a3d5c;
+      font-size: 14px;
+    }
+    .param-item input {
+      width: 80px;
+      padding: 8px 12px;
+      border-radius: 40px;
+      border: 1px solid #baccdd;
+      background: white;
+      font-size: 15px;
+      font-weight: 500;
+      text-align: center;
+    }
+    .param-item input:focus {
+      border-color: #2a7bbf;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(42, 123, 191, 0.2);
+    }
+    .result-area {
+      background: #0b2b4a;
+      border-radius: 40px;
+      padding: 20px 28px;
+      margin: 28px 0 18px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      color: white;
+    }
+    .result-label {
+      font-size: 18px;
+      font-weight: 400;
+      opacity: 0.8;
+      letter-spacing: 0.3px;
+    }
+    .result-value {
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: rgba(255,255,255,0.08);
+      padding: 4px 24px;
+      border-radius: 60px;
+      backdrop-filter: blur(4px);
+    }
+    .risk-tag {
+      font-size: 22px;
+      font-weight: 600;
+      padding: 6px 22px;
+      border-radius: 60px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .btn-calc {
+      background: #1f6eb0;
+      border: none;
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 18px 28px;
+      border-radius: 60px;
+      width: 100%;
+      cursor: pointer;
+      transition: 0.15s;
+      box-shadow: 0 6px 12px rgba(26, 80, 140, 0.25);
+      letter-spacing: 0.5px;
+      margin-top: 6px;
+    }
+    .btn-calc:hover {
+      background: #135a99;
+      transform: scale(0.98);
+      box-shadow: 0 4px 8px rgba(26, 80, 140, 0.3);
+    }
+    .btn-calc:active {
+      transform: scale(0.96);
+    }
+    .footnote {
+      font-size: 13px;
+      color: #3b5d7e;
+      margin-top: 20px;
+      text-align: center;
+      border-top: 1px solid #c5d7ea;
+      padding-top: 18px;
+      opacity: 0.8;
+    }
+    .badge {
+      background: #dce8f5;
+      border-radius: 40px;
+      padding: 2px 12px;
+      font-size: 12px;
+      color: #1d4b73;
+    }
+    .inline-code {
+      background: #dce5f0;
+      padding: 2px 10px;
+      border-radius: 30px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    #loadingOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #loadingOverlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loader-spinner {
+      width: 56px;
+      height: 56px;
+      border: 5px solid #dce8f5;
+      border-top-color: #1f6eb0;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loader-text {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: 500;
+      color: #0b2b4a;
+      letter-spacing: 0.5px;
+    }
+    .loader-sub {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #4d6f91;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loadingOverlay">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">⏳ 加载数据中...</div>
+    <div class="loader-sub">正在渲染数据，请稍候</div>
+  </div>
+
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+     <h1 style="margin: 0;">🌀 深圳台风风险指数</h1>
+     <img src="logo.png" alt="Logo" style="height: 50px; width: auto; border-radius: 8px;">
+  </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>最大风速 \( V_{\text{max}} \) <span>(m/s)</span></label>
+        <input type="number" id="vmax" value="35" step="0.5" min="5" max="80">
+        <div class="hint">台风中心最大风速 (核心指标)</div>
+      </div>
+      <div class="field">
+        <label>距离深圳 \( d \) <span>(km)</span></label>
+        <input type="number" id="dist" value="120" step="1" min="0" max="1500">
+        <div class="hint">台风中心离深圳最近距离</div>
+      </div>
+      <div class="field">
+        <label>七级风圈 \( R_7 \) <span>(km)</span></label>
+        <input type="number" id="r7" value="280" step="5" min="30" max="600">
+        <div class="hint">影响范围 (若 &gt;250km 启用扩大修正)</div>
+      </div>
+      <div class="field">
+        <label>十级风圈 \( R_{10} \) <span>(km)</span></label>
+        <input type="number" id="r10" value="80" step="5" min="10" max="400">
+        <div class="hint">用于 \( R_{\text{eff}} \) 调和平均</div>
+      </div>
+      <div class="field">
+        <label>最大小时降雨 \( R_{\text{rain}} \) <span>(mm/h)</span></label>
+        <input type="number" id="rain" value="18" step="0.5" min="0" max="200">
+        <div class="hint">暴雨风险修正因子</div>
+      </div>
+      <div class="field">
+        <label>风暴增水 \( S_{\text{surge}} \) <span>(m)</span></label>
+        <input type="number" id="surge" value="0.8" step="0.05" min="0" max="8">
+        <div class="hint">深圳沿海最大风暴增水</div>
+      </div>
+    </div>
+
+    <div class="params-group">
+      <div class="param-item">
+        <label>α (降雨权重)</label>
+        <input type="number" id="alpha" value="0.01" step="0.001" min="0" max="0.5">
+      </div>
+      <div class="param-item">
+        <label>β (风暴潮权重)</label>
+        <input type="number" id="beta" value="0.2" step="0.01" min="0" max="1.0">
+      </div>
+      <div class="param-item">
+        <label>γ (风圈扩大修正)</label>
+        <input type="number" id="gamma" value="0.3" step="0.01" min="0" max="1.0">
+      </div>
+    </div>
+
+    <div class="result-area">
+      <span class="result-label">⚡ 风险指数</span>
+      <span class="result-value" id="riskIndexDisplay">0.00</span>
+      <span class="risk-tag" id="riskLevel">—</span>
+    </div>
+
+    <button class="btn-calc" id="calcBtn">🔄 重新计算</button>
+
+    <div class="footnote">
+      <span class="badge">公式 v1.0</span>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        const overlay = document.getElementById('loadingOverlay');
+        overlay.classList.add('hidden');
+      }, 300);
+    });
+
+    setTimeout(function() {
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay && !overlay.classList.contains('hidden')) {
+        overlay.classList.add('hidden');
+      }
+    }, 5000);
+    
+    (function() {
+      const vmaxInput = document.getElementById('vmax');
+      const distInput = document.getElementById('dist');
+      const r7Input = document.getElementById('r7');
+      const r10Input = document.getElementById('r10');
+      const rainInput = document.getElementById('rain');
+      const surgeInput = document.getElementById('surge');
+      const alphaInput = document.getElementById('alpha');
+      const betaInput = document.getElementById('beta');
+      const gammaInput = document.getElementById('gamma');
+      const riskDisplay = document.getElementById('riskIndexDisplay');
+      const riskLevel = document.getElementById('riskLevel');
+
+      function getFloat(id) {
+        const el = document.getElementById(id);
+        if (!el) return 0;
+        const val = parseFloat(el.value);
+        return isNaN(val) ? 0 : val;
+      }
+
+      function computeRisk() {
+        const Vmax = getFloat('vmax');
+        const d = getFloat('dist');
+        const R7 = getFloat('r7');
+        const R10 = getFloat('r10');
+        const Rrain = getFloat('rain');
+        const Ssurge = getFloat('surge');
+        const alpha = getFloat('alpha');
+        const beta = getFloat('beta');
+        const gamma = getFloat('gamma');
+
+        if (Vmax <= 0 || d < 0 || R7 <= 0 || R10 <= 0) {
+          return { index: 0, level: '⚠️ 参数无效' };
+        }
+
+        const correction = 1 + alpha * Rrain + beta * Ssurge;
+
+        let index = 0;
+        let usedRadius = 0;
+        let expansionFactor = 1;
+
+        if (R7 <= 250) {
+          const Reff = (2 * R7 * R10) / (R7 + R10);
+          usedRadius = Reff;
+          const exponent = -(d / Reff) * Math.log(Vmax / 15);
+          const decay = Math.exp(exponent);
+          index = (Vmax / 17.2) * decay * correction;
+        } else {
+          const ratio = (R7 - 250) / 250;
+          expansionFactor = 1 + gamma * ratio;
+          usedRadius = R7;
+          const exponent = -(d / R7) * Math.log(Vmax / 15);
+          const decay = Math.exp(exponent);
+          index = expansionFactor * (Vmax / 17.2) * decay * correction;
+        }
+
+        if (index < 0) index = 0;
+
+        let level = '';
+        if (index < 0.3) level = '🟢 低';
+        else if (index < 0.8) level = '🟡 中';
+        else if (index < 1.8) level = '🟠 高';
+        else if (index < 3.5) level = '🔴 很高';
+        else level = '⚫ 极高';
+
+        return { index, level, usedRadius, expansionFactor, correction };
+      }
+
+      function updateDisplay() {
+        const result = computeRisk();
+        const index = result.index;
+        const level = result.level;
+
+        riskDisplay.textContent = index.toFixed(2);
+        riskLevel.textContent = level;
+
+        if (index < 0.3) {
+          riskDisplay.style.color = '#8bc34a';
+        } else if (index < 0.8) {
+          riskDisplay.style.color = '#fdd835';
+        } else if (index < 1.8) {
+          riskDisplay.style.color = '#ffa726';
+        } else if (index < 3.5) {
+          riskDisplay.style.color = '#ef5350';
+        } else {
+          riskDisplay.style.color = '#b71c1c';
+        }
+      }
+
+      const inputs = [
+        vmaxInput, distInput, r7Input, r10Input, 
+        rainInput, surgeInput, alphaInput, betaInput, gammaInput
+      ];
+      inputs.forEach(inp => {
+        inp.addEventListener('input', updateDisplay);
+        inp.addEventListener('change', updateDisplay);
+      });
+
+      document.getElementById('calcBtn').addEventListener('click', updateDisplay);
+
+      const origCompute = computeRisk;
+      computeRisk = function() {
+        const R10 = getFloat('r10');
+        if (R10 <= 0) {
+        }
+        return origCompute.call(this);
+      };
+
+      const safeCompute = function() {
+        const Vmax = parseFloat(vmaxInput.value) || 0;
+        const d = parseFloat(distInput.value) || 0;
+        let R7 = parseFloat(r7Input.value) || 0;
+        let R10 = parseFloat(r10Input.value) || 0;
+        const Rrain = parseFloat(rainInput.value) || 0;
+        const Ssurge = parseFloat(surgeInput.value) || 0;
+        const alpha = parseFloat(alphaInput.value) || 0;
+        const beta = parseFloat(betaInput.value) || 0;
+        const gamma = parseFloat(gammaInput.value) || 0;
+
+        if (Vmax <= 0 || d < 0 || R7 <= 0) {
+          return { index: 0, level: '⚠️ 参数无效' };
+        }
+        if (R7 <= 250 && R10 <= 0) {
+          R10 = R7 * 0.3;
+        } else if (R10 <= 0) {
+          R10 = 30;
+        }
+
+        const correction = 1 + alpha * Rrain + beta * Ssurge;
+        let index = 0;
+        let usedRadius = 0;
+        let expansionFactor = 1;
+
+        if (R7 <= 250) {
+          const Reff = (2 * R7 * R10) / (R7 + R10);
+          usedRadius = Reff;
+          const exponent = -(d / Reff) * Math.log(Vmax / 15);
+          const decay = Math.exp(exponent);
+          index = (Vmax / 17.2) * decay * correction;
+        } else {
+          const ratio = (R7 - 250) / 250;
+          expansionFactor = 1 + gamma * ratio;
+          usedRadius = R7;
+          const exponent = -(d / R7) * Math.log(Vmax / 15);
+          const decay = Math.exp(exponent);
+          index = expansionFactor * (Vmax / 17.2) * decay * correction;
+        }
+
+        if (index < 0) index = 0;
+        let level = '';
+        if (index < 0.3) level = '🟢 低';
+        else if (index < 0.8) level = '🟡 中';
+        else if (index < 1.8) level = '🟠 高';
+        else if (index < 3.5) level = '🔴 很高';
+        else level = '⚫ 极高';
+
+        return { index, level };
+      };
+
+      const newUpdate = function() {
+        const result = safeCompute();
+        riskDisplay.textContent = result.index.toFixed(2);
+        riskLevel.textContent = result.level;
+        const idx = result.index;
+        if (idx < 0.3) riskDisplay.style.color = '#8bc34a';
+        else if (idx < 0.8) riskDisplay.style.color = '#fdd835';
+        else if (idx < 1.8) riskDisplay.style.color = '#ffa726';
+        else if (idx < 3.5) riskDisplay.style.color = '#ef5350';
+        else riskDisplay.style.color = '#b71c1c';
+      };
+
+      inputs.forEach(inp => {
+        inp.removeEventListener('input', updateDisplay);
+        inp.removeEventListener('change', updateDisplay);
+        inp.addEventListener('input', newUpdate);
+        inp.addEventListener('change', newUpdate);
+      });
+      document.getElementById('calcBtn').removeEventListener('click', updateDisplay);
+      document.getElementById('calcBtn').addEventListener('click', newUpdate);
+
+      newUpdate();
+    })();
+  </script>
+</body>
+</html>
